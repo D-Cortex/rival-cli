@@ -2,7 +2,12 @@
   "name": "@rival/cli",
   "version": "1.0.0",
   "description": "Rival CLI — manage and push function code to the Rival platform",
-  "keywords": ["rival", "cli", "functions", "cortexone"],
+  "keywords": [
+    "rival",
+    "cli",
+    "functions",
+    "cortexone"
+  ],
   "homepage": "https://rival.io",
   "author": "Rival <team@rival.io>",
   "license": "MIT",
@@ -17,25 +22,26 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "build:macos-arm64": "npm run build && pkg dist/index.js --target node18-macos-arm64 --output rival-macos-arm64 --compress GZip",
-    "build:macos-x64":   "npm run build && pkg dist/index.js --target node18-macos-x64   --output rival-macos-x64   --compress GZip",
-    "build:linux-x64":   "npm run build && pkg dist/index.js --target node18-linux-x64   --output rival-linux-x64   --compress GZip",
-    "build:win-x64":     "npm run build && pkg dist/index.js --target node18-win-x64     --output rival-win-x64.exe --compress GZip",
-    "build:all": "npm run build:macos-arm64 && npm run build:macos-x64 && npm run build:linux-x64 && npm run build:win-x64",
+    "build:macos-arm64": "node scripts/build.mjs macos-arm64",
+    "build:macos-x64": "node scripts/build.mjs macos-x64",
+    "build:linux-x64": "node scripts/build.mjs linux-x64",
+    "build:win-x64": "node scripts/build.mjs win-x64",
+    "build:all": "node scripts/build.mjs",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "axios": "^1.7.2",
-    "chalk": "^4.1.2",
+    "chalk": "^5.6.2",
     "commander": "^12.1.0",
-    "dotenv": "^16.4.5",
-    "inquirer": "^8.2.6",
-    "ora": "^5.4.1"
+    "dotenv": "^16.6.1",
+    "inquirer": "^9.3.8",
+    "ora": "^8.2.0"
   },
   "devDependencies": {
-    "@types/inquirer": "^8.2.10",
+    "@types/inquirer": "^9.0.9",
     "@types/node": "^20.14.10",
     "@yao-pkg/pkg": "^5.11.5",
+    "esbuild": "^0.27.4",
     "typescript": "^5.5.3"
   },
   "engines": {
@@ -43,15 +49,5 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "pkg": {
-    "assets": [],
-    "scripts": "dist/**/*.js",
-    "targets": [
-      "node18-macos-arm64",
-      "node18-macos-x64",
-      "node18-linux-x64",
-      "node18-win-x64"
-    ]
   }
 }
