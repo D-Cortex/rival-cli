@@ -8,15 +8,18 @@ class Rival < Formula
     if Hardware::CPU.arm?
       url "https://github.com/D-Cortex/rival-cli/releases/download/v#{version}/rival-macos-arm64"
       sha256 "fd1aa7be65c0c26f6e518590287365846b012b5cf5d20f78e4e2740b10873b16"
+
+      def install
+        bin.install "rival-macos-arm64" => "rival"
+      end
     else
       url "https://github.com/D-Cortex/rival-cli/releases/download/v#{version}/rival-macos-x64"
       sha256 "e52f9323491568fad6402595c1635758d1dc66479c9090b532c0881ca4e2b4a3"
-    end
-  end
 
-  def install
-    binary = Dir["rival-macos-*"].first
-    bin.install binary => "rival"
+      def install
+        bin.install "rival-macos-x64" => "rival"
+      end
+    end
   end
 
   test do
