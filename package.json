@@ -34,11 +34,11 @@
     "chalk": "^5.6.2",
     "commander": "^12.1.0",
     "dotenv": "^16.6.1",
-    "inquirer": "^9.3.8",
+    "inquirer": "^8.2.7",
     "ora": "^8.2.0"
   },
   "devDependencies": {
-    "@types/inquirer": "^9.0.9",
+    "@types/inquirer": "^8.2.12",
     "@types/node": "^20.14.10",
     "@yao-pkg/pkg": "^5.11.5",
     "esbuild": "^0.27.4",
