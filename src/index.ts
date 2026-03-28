@@ -25,7 +25,7 @@ const program = new Command();
 program
   .name('rival')
   .description('Rival CLI — push function code and manage your Rival workspace')
-  .version('0.1.0', '-v, -V, --version', 'Output the version number');
+  .version('1.0.0', '-v, -V, --version', 'Output the version number');
 
 program.addCommand(createAddCommand());
 program.addCommand(createFetchCommand());
