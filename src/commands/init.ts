@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import inquirer from 'inquirer';
+import prompts from 'prompts';
 import ora from 'ora';
 import fs from 'fs';
 import path from 'path';
@@ -109,83 +109,58 @@ export function createInitCommand(): Command {
 
       console.log(chalk.bold('\nRival — Create Function\n'));
 
-      const answers = await inquirer.prompt<{
-        name: string;
-        description: string;
-        type: string;
-        runtime: string;
-        categoryId: string;
-        sectorIds: string[];
-        computeType: string;
-      }>([
+      const answers = await prompts([
         {
-          type: 'input',
+          type: 'text',
           name: 'name',
           message: 'Function name:',
-          validate: (v: string) =>
-            v.trim().length > 0 ? true : 'Name cannot be empty',
+          validate: (v: string) => v.trim().length > 0 || 'Name cannot be empty',
         },
         {
-          type: 'input',
+          type: 'text',
           name: 'description',
           message: 'Short description:',
-          validate: (v: string) =>
-            v.trim().length > 0 ? true : 'Description cannot be empty',
+          validate: (v: string) => v.trim().length > 0 || 'Description cannot be empty',
         },
         ...(meta.type?.length ? [{
-          type: 'list' as const,
+          type: 'select' as const,
           name: 'type',
           message: 'Tool type:',
-          choices: meta.type.map((t) => ({ name: t.display_name, value: t.name })),
-          default: meta.type.find((t) => t.default)?.name ?? meta.type[0]?.name,
+          choices: meta.type.map((t) => ({ title: t.display_name, value: t.name })),
+          initial: meta.type.findIndex((t) => t.default) ?? 0,
         }] : []),
         {
-          type: 'list',
+          type: 'select' as const,
           name: 'runtime',
           message: 'Runtime:',
           choices: (meta.runtimes ?? [])
             .filter((r) => TEMPLATES[r.name])
-            .map((r) => ({ name: r.display_name, value: r.name })),
-          default: (meta.runtimes ?? []).find((r) => r.default)?.name ?? 'python:3.13',
+            .map((r) => ({ title: r.display_name, value: r.name })),
+          initial: Math.max(0, (meta.runtimes ?? []).filter(r => TEMPLATES[r.name]).findIndex((r) => r.default)),
         },
         {
-          type: 'list',
+          type: 'select' as const,
           name: 'categoryId',
           message: 'Category:',
-          choices: (meta.categories ?? []).map((c) => ({
-            name: c.name,
-            value: c.category_id,
-          })),
+          choices: (meta.categories ?? []).map((c) => ({ title: c.name, value: c.category_id })),
         },
         {
-          type: 'checkbox',
+          type: 'multiselect' as const,
           name: 'sectorIds',
           message: 'Sectors — SPACE to select, ENTER to confirm (up to 4):',
-          choices: (meta.sectors ?? []).map((s) => ({
-            name: s.name,
-            value: s.sector_id,
-          })),
+          choices: (meta.sectors ?? []).map((s) => ({ title: s.name, value: s.sector_id })),
+          min: 1,
+          max: 4,
         },
         {
-          type: 'list',
+          type: 'select' as const,
           name: 'computeType',
           message: 'Compute type:',
-          choices: (meta.compute_type ?? []).map((c) => ({
-            name: c.display_name,
-            value: c.name,
-          })),
-          default: (meta.compute_type ?? []).find((c) => c.default)?.name,
+          choices: (meta.compute_type ?? []).map((c) => ({ title: c.display_name, value: c.name })),
+          initial: Math.max(0, (meta.compute_type ?? []).findIndex((c) => c.default)),
         },
       ]);
-
-      if (answers.sectorIds.length === 0) {
-        console.error(chalk.red('Error: ') + 'Select at least one sector (use SPACE to select).');
-        process.exit(1);
-      }
-      if (answers.sectorIds.length > 4) {
-        console.error(chalk.red('Error: ') + 'Maximum 4 sectors allowed.');
-        process.exit(1);
-      }
+      if (!answers.name || !answers.runtime) process.exit(0);
 
       // Create function on backend
       const spinner = ora(`Creating "${answers.name}" on Rival…`).start();

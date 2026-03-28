@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import inquirer from 'inquirer';
+import prompts from 'prompts';
 import ora from 'ora';
 import chalk from 'chalk';
 import { DescopeClient, RivalApiClient } from '../lib/api.js';
@@ -22,37 +22,33 @@ export function createLoginCommand(): Command {
         // Step 1: get email
         let { email } = options;
         if (!email) {
-          const answer = await inquirer.prompt<{ email: string }>([
-            {
-              type: 'input',
-              name: 'email',
-              message: 'Enter your Rival email:',
-              validate: (v: string) =>
-                v.includes('@') ? true : 'Enter a valid email address',
-            },
-          ]);
+          const answer = await prompts({
+            type: 'text',
+            name: 'email',
+            message: 'Enter your Rival email:',
+            validate: (v: string) => v.includes('@') || 'Enter a valid email address',
+          });
+          if (!answer.email) process.exit(0);
           email = answer.email;
         }
 
         // Step 2: send OTP via Descope
         const sendSpinner = ora(`Sending OTP to ${chalk.cyan(email)}…`).start();
-        await descope.sendOtp(email);
+        await descope.sendOtp(email as string);
         sendSpinner.succeed(`OTP sent to ${chalk.cyan(email)}`);
 
         // Step 3: prompt for OTP
-        const { code } = await inquirer.prompt<{ code: string }>([
-          {
-            type: 'input',
-            name: 'code',
-            message: 'Enter the OTP code:',
-            validate: (v: string) =>
-              v.trim().length > 0 ? true : 'OTP cannot be empty',
-          },
-        ]);
+        const { code } = await prompts({
+          type: 'text',
+          name: 'code',
+          message: 'Enter the OTP code:',
+          validate: (v: string) => v.trim().length > 0 || 'OTP cannot be empty',
+        });
+        if (!code) process.exit(0);
 
         // Step 4: verify OTP via Descope — returns sessionJwt
         const verifySpinner = ora('Verifying OTP…').start();
-        const result = await descope.verifyOtp(email, code.trim());
+        const result = await descope.verifyOtp(email as string, code.trim());
         verifySpinner.succeed('OTP verified');
 
         const token = result.sessionJwt as string | undefined;
@@ -88,17 +84,16 @@ export function createLoginCommand(): Command {
             chalk.green('✓') + ` Using organization: ${chalk.cyan(orgs[0].organization_name)}`
           );
         } else {
-          const { selectedOrg } = await inquirer.prompt<{ selectedOrg: string }>([
-            {
-              type: 'list',
-              name: 'selectedOrg',
-              message: 'Select your organization:',
-              choices: orgs.map((org) => ({
-                name: `${org.organization_name} ${chalk.dim(`(${org.organization_slug})`)}`,
-                value: org.organization_id,
-              })),
-            },
-          ]);
+          const { selectedOrg } = await prompts({
+            type: 'select',
+            name: 'selectedOrg',
+            message: 'Select your organization:',
+            choices: orgs.map((org) => ({
+              title: `${org.organization_name} ${chalk.dim(`(${org.organization_slug})`)}`,
+              value: org.organization_id,
+            })),
+          });
+          if (!selectedOrg) process.exit(0);
           orgId = selectedOrg;
         }
 

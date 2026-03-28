@@ -7,14 +7,14 @@ class Rival < Formula
   on_macos do
     if Hardware::CPU.arm?
       url "https://github.com/D-Cortex/rival-cli/releases/download/v#{version}/rival-macos-arm64"
-      sha256 "b512c41fedb69fccea677b40009e79a7fbf55b3245fa7c6466e6e8b164c09f6f"
+      sha256 "3e222bc2a06f6c286c0ffa9a7a748fc4d6266ceff22f798dd4eae42eb8bdefa4"
 
       def install
         bin.install "rival-macos-arm64" => "rival"
       end
     else
       url "https://github.com/D-Cortex/rival-cli/releases/download/v#{version}/rival-macos-x64"
-      sha256 "7443b5d174161e35f5a993939f06bf0f90a7812865a99c7ef615063cad6e5455"
+      sha256 "484a7368ea367cdc89b982cf864466184d472cb5e4ca790c21ca889d23f613f4"
 
       def install
         bin.install "rival-macos-x64" => "rival"

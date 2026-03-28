@@ -141,15 +141,13 @@ export function createFuncCommand(): Command {
           for (const f of conflicts) console.log(`   ${chalk.red('M')}  ${f}`);
           console.log();
 
-          const { default: inquirer } = await import('inquirer');
-          const { confirmed } = await inquirer.prompt<{ confirmed: boolean }>([
-            {
-              type: 'confirm',
-              name: 'confirmed',
-              message: `Overwrite existing files in ${path.relative(process.cwd(), outDir) || '.'}?`,
-              default: false,
-            },
-          ]);
+          const { default: prompts } = await import('prompts');
+          const { confirmed } = await prompts({
+            type: 'confirm',
+            name: 'confirmed',
+            message: `Overwrite existing files in ${path.relative(process.cwd(), outDir) || '.'}?`,
+            initial: false,
+          });
           if (!confirmed) {
             console.log(chalk.dim('Aborted.'));
             process.exit(0);

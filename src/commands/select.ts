@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import inquirer from 'inquirer';
+import prompts from 'prompts';
 import ora from 'ora';
 import chalk from 'chalk';
 import fs from 'fs';
@@ -88,21 +88,17 @@ export function createSelectCommand(): Command {
         process.exit(0);
       }
 
-      const { selectedVersion } = await inquirer.prompt<{ selectedVersion: string }>([
-        {
-          type: 'list',
-          name: 'selectedVersion',
-          message: 'Select version:',
-          choices: versions.map((v) => {
-            const label = v.version || 'Draft';
-            return {
-              name: `${label}  ${chalk.dim(`(${v.state})`)}`,
-              value: label,
-            };
-          }),
-          default: projectConfig.version,
-        },
-      ]);
+      const { selectedVersion } = await prompts({
+        type: 'select',
+        name: 'selectedVersion',
+        message: 'Select version:',
+        choices: versions.map((v) => {
+          const label = v.version || 'Draft';
+          return { title: `${label}  ${chalk.dim(`(${v.state})`)}`, value: label };
+        }),
+        initial: Math.max(0, versions.findIndex((v) => (v.version || 'Draft') === projectConfig.version)),
+      });
+      if (!selectedVersion) process.exit(0);
 
       // If already on this version, skip checkout
       if (selectedVersion === projectConfig.version) {
@@ -124,14 +120,12 @@ export function createSelectCommand(): Command {
           console.log(`   ${chalk.red('M')}  ${f}`);
         }
         console.log();
-        const { confirmed } = await inquirer.prompt<{ confirmed: boolean }>([
-          {
-            type: 'confirm',
-            name: 'confirmed',
-            message: `Discard local changes and switch to ${chalk.cyan(selectedVersion)}?`,
-            default: false,
-          },
-        ]);
+        const { confirmed } = await prompts({
+          type: 'confirm',
+          name: 'confirmed',
+          message: `Discard local changes and switch to ${chalk.cyan(selectedVersion)}?`,
+          initial: false,
+        });
         if (!confirmed) {
           console.log(chalk.dim('Aborted. Your files are unchanged.'));
           process.exit(0);
