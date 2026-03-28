@@ -1,0 +1,57 @@
+{
+  "name": "@rival/cli",
+  "version": "1.0.0",
+  "description": "Rival CLI — manage and push function code to the Rival platform",
+  "keywords": ["rival", "cli", "functions", "cortexone"],
+  "homepage": "https://rival.io",
+  "author": "Rival <team@rival.io>",
+  "license": "MIT",
+  "bin": {
+    "rival": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    ".env.example"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "build:macos-arm64": "npm run build && pkg dist/index.js --target node18-macos-arm64 --output rival-macos-arm64 --compress GZip",
+    "build:macos-x64":   "npm run build && pkg dist/index.js --target node18-macos-x64   --output rival-macos-x64   --compress GZip",
+    "build:linux-x64":   "npm run build && pkg dist/index.js --target node18-linux-x64   --output rival-linux-x64   --compress GZip",
+    "build:win-x64":     "npm run build && pkg dist/index.js --target node18-win-x64     --output rival-win-x64.exe --compress GZip",
+    "build:all": "npm run build:macos-arm64 && npm run build:macos-x64 && npm run build:linux-x64 && npm run build:win-x64",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "dotenv": "^17.3.1",
+    "inquirer": "^9.2.12",
+    "ora": "^8.0.1"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^20.14.10",
+    "@yao-pkg/pkg": "^5.11.5",
+    "typescript": "^5.5.3"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "pkg": {
+    "assets": [],
+    "scripts": "dist/**/*.js",
+    "targets": [
+      "node18-macos-arm64",
+      "node18-macos-x64",
+      "node18-linux-x64",
+      "node18-win-x64"
+    ]
+  }
+}

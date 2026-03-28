@@ -1,0 +1,252 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # create GitHub releases + upload assets
+  id-token: write   # npm provenance
+
+jobs:
+  # ── 1. Build standalone binaries ────────────────────────────────────────────
+  build:
+    name: Build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - target: macos-arm64
+            os: macos-latest
+            pkg_target: node18-macos-arm64
+            asset_name: rival-macos-arm64
+          - target: macos-x64
+            os: macos-latest
+            pkg_target: node18-macos-x64
+            asset_name: rival-macos-x64
+          - target: linux-x64
+            os: ubuntu-latest
+            pkg_target: node18-linux-x64
+            asset_name: rival-linux-x64
+          - target: win-x64
+            os: windows-latest
+            pkg_target: node18-win-x64
+            asset_name: rival-win-x64.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Build binary
+        run: npx @yao-pkg/pkg dist/index.js --target ${{ matrix.pkg_target }} --output ${{ matrix.asset_name }} --compress GZip
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: ${{ matrix.asset_name }}
+
+  # ── 2. Create GitHub release + attach binaries ───────────────────────────────
+  release:
+    name: GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Download all binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: binaries/
+          merge-multiple: true
+
+      - name: Make Linux/macOS binaries executable
+        run: chmod +x binaries/rival-macos-arm64 binaries/rival-macos-x64 binaries/rival-linux-x64
+
+      - name: Compute SHA256 checksums
+        id: sha
+        run: |
+          cd binaries
+          sha256sum rival-macos-arm64  | awk '{print $1}' > rival-macos-arm64.sha256
+          sha256sum rival-macos-x64    | awk '{print $1}' > rival-macos-x64.sha256
+          sha256sum rival-linux-x64    | awk '{print $1}' > rival-linux-x64.sha256
+          sha256sum rival-win-x64.exe  | awk '{print $1}' > rival-win-x64.exe.sha256
+          echo "macos_arm64=$(cat rival-macos-arm64.sha256)"  >> $GITHUB_OUTPUT
+          echo "macos_x64=$(cat rival-macos-x64.sha256)"      >> $GITHUB_OUTPUT
+          echo "linux_x64=$(cat rival-linux-x64.sha256)"      >> $GITHUB_OUTPUT
+          echo "win_x64=$(cat rival-win-x64.exe.sha256)"      >> $GITHUB_OUTPUT
+
+      - name: Create GitHub release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: rival ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: |
+            binaries/rival-macos-arm64
+            binaries/rival-macos-x64
+            binaries/rival-linux-x64
+            binaries/rival-win-x64.exe
+            binaries/rival-macos-arm64.sha256
+            binaries/rival-macos-x64.sha256
+            binaries/rival-linux-x64.sha256
+            binaries/rival-win-x64.exe.sha256
+
+  # ── 3. Publish to npm ────────────────────────────────────────────────────────
+  npm:
+    name: Publish to npm
+    needs: release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - run: npm ci
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # ── 4. Update Homebrew tap ───────────────────────────────────────────────────
+  homebrew:
+    name: Update Homebrew tap
+    needs: [release, build]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: rival-io/homebrew-tap   # ← your tap repo
+          token: ${{ secrets.TAP_GITHUB_TOKEN }}
+          path: homebrew-tap
+
+      - name: Download SHA files
+        uses: actions/download-artifact@v4
+        with:
+          path: binaries/
+          merge-multiple: true
+
+      - name: Update Formula
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+        run: |
+          ARM64_SHA=$(sha256sum binaries/rival-macos-arm64 | awk '{print $1}')
+          X64_SHA=$(sha256sum binaries/rival-macos-x64 | awk '{print $1}')
+
+          cat > homebrew-tap/Formula/rival.rb << FORMULA
+          class Rival < Formula
+            desc "Rival CLI — manage and push function code to the Rival platform"
+            homepage "https://rival.io"
+            version "${VERSION}"
+            license "MIT"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/rival-io/rival-cli/releases/download/v${VERSION}/rival-macos-arm64"
+                sha256 "${ARM64_SHA}"
+              else
+                url "https://github.com/rival-io/rival-cli/releases/download/v${VERSION}/rival-macos-x64"
+                sha256 "${X64_SHA}"
+              end
+            end
+
+            on_linux do
+              url "https://github.com/rival-io/rival-cli/releases/download/v${VERSION}/rival-linux-x64"
+              sha256 "$(sha256sum binaries/rival-linux-x64 | awk '{print $1}')"
+            end
+
+            def install
+              binary_name = if OS.mac?
+                Hardware::CPU.arm? ? "rival-macos-arm64" : "rival-macos-x64"
+              else
+                "rival-linux-x64"
+              end
+              bin.install binary_name => "rival"
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/rival --version")
+            end
+          end
+          FORMULA
+
+      - name: Commit and push formula update
+        run: |
+          cd homebrew-tap
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/rival.rb
+          git commit -m "rival ${{ needs.release.outputs.version }}"
+          git push
+
+  # ── 5. Update Scoop bucket ───────────────────────────────────────────────────
+  scoop:
+    name: Update Scoop bucket
+    needs: release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: rival-io/scoop-rival   # ← your scoop bucket repo
+          token: ${{ secrets.TAP_GITHUB_TOKEN }}
+          path: scoop-bucket
+
+      - name: Download SHA files
+        uses: actions/download-artifact@v4
+        with:
+          path: binaries/
+          merge-multiple: true
+
+      - name: Update manifest
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+        run: |
+          WIN_SHA=$(sha256sum binaries/rival-win-x64.exe | awk '{print $1}')
+          cat > scoop-bucket/rival.json << MANIFEST
+          {
+            "version": "${VERSION}",
+            "description": "Rival CLI — manage and push function code to the Rival platform",
+            "homepage": "https://rival.io",
+            "license": "MIT",
+            "architecture": {
+              "64bit": {
+                "url": "https://github.com/rival-io/rival-cli/releases/download/v${VERSION}/rival-win-x64.exe",
+                "hash": "${WIN_SHA}",
+                "bin": "rival-win-x64.exe"
+              }
+            },
+            "bin": [["rival-win-x64.exe", "rival"]]
+          }
+          MANIFEST
+
+      - name: Commit and push manifest update
+        run: |
+          cd scoop-bucket
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add rival.json
+          git commit -m "rival ${{ needs.release.outputs.version }}"
+          git push

@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rival CLI — Command Guide</title>
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --surface: #141414;
+      --border: #222;
+      --accent: #7c3aed;
+      --accent-light: #a78bfa;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #eab308;
+      --cyan: #22d3ee;
+      --text: #e5e7eb;
+      --muted: #6b7280;
+      --code-bg: #1a1a1a;
+      --radius: 8px;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* ── Layout ── */
+    .layout { display: flex; min-height: 100vh; }
+
+    nav {
+      width: 240px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 24px 16px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    nav .logo {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-light);
+      margin-bottom: 28px;
+      letter-spacing: -0.5px;
+    }
+
+    nav ul { list-style: none; }
+
+    nav ul li + li { margin-top: 2px; }
+
+    nav ul a {
+      display: block;
+      padding: 6px 10px;
+      border-radius: 6px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-family: var(--font-mono);
+      transition: color 0.15s, background 0.15s;
+    }
+
+    nav ul a:hover { color: var(--text); background: #1f1f1f; }
+    nav ul a.active { color: var(--accent-light); background: #1e1730; }
+
+    nav .section-label {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 14px 10px 4px;
+    }
+
+    main {
+      flex: 1;
+      max-width: 820px;
+      padding: 48px 48px 80px;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      margin-bottom: 56px;
+    }
+
+    .hero h1 {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, var(--accent-light) 0%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 16px;
+      max-width: 540px;
+    }
+
+    /* ── Badges ── */
+    .badges { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+
+    .badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 99px;
+      border: 1px solid;
+    }
+
+    .badge-purple { color: var(--accent-light); border-color: var(--accent); background: #1e1730; }
+    .badge-green  { color: var(--green);        border-color: #166534;       background: #052e16; }
+    .badge-cyan   { color: var(--cyan);          border-color: #155e75;       background: #083344; }
+
+    /* ── Section headings ── */
+    .section { margin-bottom: 48px; }
+
+    .section h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      scroll-margin-top: 24px;
+    }
+
+    /* ── Command cards ── */
+    .cmd-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .cmd-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      background: #111;
+    }
+
+    .cmd-name {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--accent-light);
+    }
+
+    .cmd-desc {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .cmd-body { padding: 16px 20px; }
+
+    /* ── Code blocks ── */
+    pre, code {
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      margin: 10px 0;
+      line-height: 1.7;
+    }
+
+    code {
+      background: #1f1f1f;
+      color: var(--cyan);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 12.5px;
+    }
+
+    pre code { background: none; color: inherit; padding: 0; border-radius: 0; font-size: 13px; }
+
+    /* Syntax colours inside pre */
+    .t-cmd   { color: var(--accent-light); }
+    .t-flag  { color: var(--cyan); }
+    .t-arg   { color: var(--yellow); }
+    .t-cmt   { color: var(--muted); font-style: italic; }
+    .t-ok    { color: var(--green); }
+    .t-err   { color: var(--red); }
+
+    /* ── Flags table ── */
+    .flags-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+
+    .flags-table th {
+      text-align: left;
+      padding: 6px 12px;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .flags-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #1a1a1a;
+      vertical-align: top;
+    }
+
+    .flags-table tr:last-child td { border-bottom: none; }
+
+    .flag-col  { font-family: var(--font-mono); color: var(--cyan); white-space: nowrap; }
+    .desc-col  { color: var(--text); }
+    .dflt-col  { font-family: var(--font-mono); color: var(--muted); font-size: 12px; }
+
+    /* ── Info boxes ── */
+    .info-box {
+      display: flex;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 6px;
+      margin: 12px 0;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .info-box .icon { flex-shrink: 0; font-size: 15px; margin-top: 1px; }
+    .info-box p { color: var(--text); }
+    .info-box p strong { color: inherit; }
+
+    .info-tip  { background: #0c1a2e; border: 1px solid #1d3a5a; }
+    .info-tip  .icon { color: var(--cyan); }
+    .info-warn { background: #1a1200; border: 1px solid #3a2800; }
+    .info-warn .icon { color: var(--yellow); }
+
+    /* ── Rival.json block ── */
+    .json-schema {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.8;
+    }
+
+    .jk { color: var(--accent-light); }
+    .jv { color: var(--cyan); }
+    .js { color: var(--green); }
+    .jc { color: var(--muted); }
+
+    /* ── Install block ── */
+    .install-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .install-grid pre { margin: 0; }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 64px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <nav>
+    <div class="logo">rival CLI</div>
+    <div class="section-label">Getting Started</div>
+    <ul>
+      <li><a href="#install">Installation</a></li>
+      <li><a href="#quickstart">Quick Start</a></li>
+      <li><a href="#config">Config Files</a></li>
+    </ul>
+    <div class="section-label">Authentication</div>
+    <ul>
+      <li><a href="#login">rival login</a></li>
+      <li><a href="#logout">rival logout</a></li>
+      <li><a href="#whoami">rival whoami</a></li>
+    </ul>
+    <div class="section-label">Functions</div>
+    <ul>
+      <li><a href="#init">rival init</a></li>
+      <li><a href="#push">rival push</a></li>
+      <li><a href="#load">rival load</a></li>
+      <li><a href="#fetch">rival fetch</a></li>
+      <li><a href="#select">rival select</a></li>
+    </ul>
+    <div class="section-label">Reference</div>
+    <ul>
+      <li><a href="#rival-json">rival.json schema</a></li>
+      <li><a href="#env">Environment vars</a></li>
+      <li><a href="#runtimes">Runtimes &amp; files</a></li>
+    </ul>
+  </nav>
+
+  <!-- Main content -->
+  <main>
+
+    <!-- ── Hero ── -->
+    <div class="hero">
+      <h1>rival CLI</h1>
+      <p>Push function code, manage versions, and interact with the Rival platform — all from your terminal.</p>
+      <div class="badges">
+        <span class="badge badge-purple">Node ≥ 18</span>
+        <span class="badge badge-green">TypeScript</span>
+        <span class="badge badge-cyan">Descope Auth</span>
+      </div>
+    </div>
+
+    <!-- ── Installation ── -->
+    <div class="section" id="install">
+      <h2>Installation</h2>
+      <div class="install-grid">
+        <pre><code><span class="t-cmt"># npm</span>
+<span class="t-cmd">npm</span> install -g rival-cli</code></pre>
+        <pre><code><span class="t-cmt"># pnpm</span>
+<span class="t-cmd">pnpm</span> add -g rival-cli</code></pre>
+      </div>
+      <pre style="margin-top:12px"><code><span class="t-cmd">rival</span> <span class="t-flag">--version</span>   <span class="t-cmt"># confirm install</span></code></pre>
+    </div>
+
+    <!-- ── Quick Start ── -->
+    <div class="section" id="quickstart">
+      <h2>Quick Start</h2>
+      <pre><code><span class="t-cmt"># 1. Authenticate</span>
+<span class="t-cmd">rival login</span>
+
+<span class="t-cmt"># 2. Create a new function (scaffolds files + saves to backend)</span>
+<span class="t-cmd">rival init</span>
+
+<span class="t-cmt"># 3. Edit your code, then push</span>
+<span class="t-cmd">rival push</span>
+
+<span class="t-cmt"># 4. Fetch latest code from the backend</span>
+<span class="t-cmd">rival load</span>
+
+<span class="t-cmt"># 5. List all functions in your org</span>
+<span class="t-cmd">rival fetch</span></code></pre>
+    </div>
+
+    <!-- ── Config Files ── -->
+    <div class="section" id="config">
+      <h2>Config Files</h2>
+      <p style="color:var(--muted); margin-bottom:12px;">Two files control the CLI's behaviour:</p>
+      <table class="flags-table">
+        <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="flag-col">~/.rival/config.json</td>
+            <td class="desc-col">Global auth — token, refresh token, org ID, email, API URL. Written by <code>rival login</code>.</td>
+          </tr>
+          <tr>
+            <td class="flag-col">~/.rival/.env</td>
+            <td class="desc-col">Optional env overrides loaded at every CLI startup before the project <code>.env</code>.</td>
+          </tr>
+          <tr>
+            <td class="flag-col">rival.json</td>
+            <td class="desc-col">Per-project function config — function ID, slugs, selected version, runtime, files. Lives in your project folder.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ════════════════════════ AUTH ════════════════════════ -->
+    <div class="section">
+      <h2>Authentication</h2>
+
+      <!-- login -->
+      <div class="cmd-card" id="login">
+        <div class="cmd-header">
+          <span class="cmd-name">rival login</span>
+          <span class="cmd-desc">Authenticate via email OTP (Descope)</span>
+        </div>
+        <div class="cmd-body">
+          <p>Sends a one-time code to your Rival email, verifies it with Descope, then fetches your organizations and saves credentials to <code>~/.rival/config.json</code>.</p>
+          <pre><code><span class="t-cmd">rival login</span>
+<span class="t-cmd">rival login</span> <span class="t-flag">--email</span> <span class="t-arg">you@company.com</span></code></pre>
+          <table class="flags-table">
+            <thead><tr><th>Flag</th><th>Description</th><th>Default</th></tr></thead>
+            <tbody>
+              <tr><td class="flag-col">-e, --email &lt;email&gt;</td><td class="desc-col">Skip the email prompt</td><td class="dflt-col">interactive</td></tr>
+              <tr><td class="flag-col">-u, --api-url &lt;url&gt;</td><td class="desc-col">Override the backend API URL</td><td class="dflt-col">cortexone-api-dev</td></tr>
+            </tbody>
+          </table>
+          <div class="info-box info-tip">
+            <span class="icon">ℹ</span>
+            <p>If you belong to multiple organizations you will be prompted to select one. You can change org later with <code>rival login</code> again or by editing <code>~/.rival/config.json</code>.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- logout -->
+      <div class="cmd-card" id="logout">
+        <div class="cmd-header">
+          <span class="cmd-name">rival logout</span>
+          <span class="cmd-desc">Remove stored credentials</span>
+        </div>
+        <div class="cmd-body">
+          <p>Deletes <code>~/.rival/config.json</code>, clearing your token, refresh token, and org ID.</p>
+          <pre><code><span class="t-cmd">rival logout</span></code></pre>
+        </div>
+      </div>
+
+      <!-- whoami -->
+      <div class="cmd-card" id="whoami">
+        <div class="cmd-header">
+          <span class="cmd-name">rival whoami</span>
+          <span class="cmd-desc">Verify session and show identity</span>
+        </div>
+        <div class="cmd-body">
+          <p>Calls <code>GET /api/v1/users/me</code> to validate your token live (not just check if a token is stored). Displays your email, name, org, and a list of all your organizations.</p>
+          <pre><code><span class="t-cmd">rival whoami</span>
+
+<span class="t-ok">✓</span> Authenticated
+
+  Email:   you@company.com
+  Name:    Aryan Bhandari
+  Org ID:  org_abc123
+  API:     https://cortexone-api-dev.rival.io
+
+  Organizations:
+    <span class="t-ok">●</span>  Acme Corp (acme)  ← active
+    ○  Personal (personal)</code></pre>
+          <table class="flags-table">
+            <thead><tr><th>Flag</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td class="flag-col">-u, --api-url &lt;url&gt;</td><td class="desc-col">Override the backend API URL</td></tr>
+            </tbody>
+          </table>
+          <div class="info-box info-tip">
+            <span class="icon">ℹ</span>
+            <p>If the token has expired but a <strong>refresh token</strong> is stored, the CLI automatically obtains a new session token and retries. You only see an error if the refresh also fails.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════ FUNCTIONS ════════════════════════ -->
+    <div class="section">
+      <h2>Functions</h2>
+
+      <!-- init -->
+      <div class="cmd-card" id="init">
+        <div class="cmd-header">
+          <span class="cmd-name">rival init</span>
+          <span class="cmd-desc">Create a new function on Rival and scaffold local files</span>
+        </div>
+        <div class="cmd-body">
+          <p>Interactively collects function metadata, calls <code>POST /api/v1/functions</code>, writes backend-returned starter files to disk, and creates <code>rival.json</code>.</p>
+          <pre><code><span class="t-cmd">rival init</span>
+<span class="t-cmd">rival init</span> <span class="t-flag">--cwd</span> <span class="t-arg">./my-function</span></code></pre>
+          <p style="margin-top:10px; color:var(--muted); font-size:13px;">Prompts collected during init:</p>
+          <ul style="margin:8px 0 0 20px; color:var(--muted); font-size:13px; line-height:1.9;">
+            <li>Function name</li>
+            <li>Short description</li>
+            <li>Runtime (Python 3.13 / JavaScript / Lua)</li>
+            <li>Tool type (Forecast, Indicator, …)</li>
+            <li>Category</li>
+            <li>Sector(s) — multi-select</li>
+            <li>Compute type (CPU / GPU)</li>
+          </ul>
+          <table class="flags-table" style="margin-top:12px;">
+            <thead><tr><th>Flag</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td class="flag-col">--cwd &lt;dir&gt;</td><td class="desc-col">Run init inside a specific directory (default: <code>process.cwd()</code>)</td></tr>
+              <tr><td class="flag-col">-u, --api-url &lt;url&gt;</td><td class="desc-col">Override the backend API URL</td></tr>
+            </tbody>
+          </table>
+          <div class="info-box info-warn">
+            <span class="icon">⚠</span>
+            <p><code>rival init</code> will exit if <code>rival.json</code> already exists in the target directory. Delete it first if you want to re-initialise.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- push -->
+      <div class="cmd-card" id="push">
+        <div class="cmd-header">
+          <span class="cmd-name">rival push</span>
+          <span class="cmd-desc">Upload local files to Rival</span>
+        </div>
+        <div class="cmd-body">
+          <p>Reads <code>rival.json</code>, validates each file against the runtime's allowed extensions, then calls <code>PUT /api/v1/functions/{id}/save-version</code>.</p>
+          <pre><code><span class="t-cmt"># Push using the version stored in rival.json</span>
+<span class="t-cmd">rival push</span>
+
+<span class="t-cmt"># Push to an explicit version</span>
+<span class="t-cmd">rival push</span> <span class="t-flag">--version</span> <span class="t-arg">v2</span>
+
+<span class="t-cmt"># Push from a specific directory</span>
+<span class="t-cmd">rival push</span> <span class="t-flag">--cwd</span> <span class="t-arg">./my-function</span></code></pre>
+          <table class="flags-table">
+            <thead><tr><th>Flag</th><th>Description</th><th>Default</th></tr></thead>
+            <tbody>
+              <tr><td class="flag-col">--version &lt;ver&gt;</td><td class="desc-col">Version label to save to</td><td class="dflt-col">rival.json → "Draft"</td></tr>
+              <tr><td class="flag-col">--cwd &lt;dir&gt;</td><td class="desc-col">Working directory</td><td class="dflt-col">process.cwd()</td></tr>
+              <tr><td class="flag-col">-u, --api-url &lt;url&gt;</td><td class="desc-col">Override the backend API URL</td><td class="dflt-col">cortexone-api-dev</td></tr>
+            </tbody>
+          </table>
+          <div class="info-box info-tip">
+            <span class="icon">ℹ</span>
+            <p>Use <code>rival select</code> first to pin a version in <code>rival.json</code> — then every <code>rival push</code> will target that version automatically.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- load -->
+      <div class="cmd-card" id="load">
+        <div class="cmd-header">
+          <span class="cmd-name">rival load</span>
+          <span class="cmd-desc">Pull latest code from Rival and write files to disk</span>
+        </div>
+        <div class="cmd-body">
+          <p>Fetches the function version stored in <code>rival.json</code> (or the first available version) from <code>GET /api/v1/function/{orgSlug}/{fnSlug}/details</code> and writes each file to the working directory. Also updates the <code>files</code> list in <code>rival.json</code>.</p>
+          <pre><code><span class="t-cmd">rival load</span>
+
+<span class="t-ok">✓</span>  main.py          (text/x-python, 42 lines)
+<span class="t-ok">✓</span>  requirements.txt (text/plain, 5 lines)
+
+2 file(s) written to /Users/you/my-function</code></pre>
+          <table class="flags-table">
+            <thead><tr><th>Flag</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td class="flag-col">--cwd &lt;dir&gt;</td><td class="desc-col">Write files to this directory (default: <code>process.cwd()</code>)</td></tr>
+              <tr><td class="flag-col">-u, --api-url &lt;url&gt;</td><td class="desc-col">Override the backend API URL</td></tr>
+            </tbody>
+          </table>
+          <div class="info-box info-warn">
+            <span class="icon">⚠</span>
+            <p>Existing files with the same name will be <strong>overwritten</strong>. Commit or stash local changes before running <code>rival load</code>.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- fetch -->
+      <div class="cmd-card" id="fetch">
+        <div class="cmd-header">
+          <span class="cmd-name">rival fetch</span>
+          <span class="cmd-desc">List all functions in your organization</span>
+        </div>
+        <div class="cmd-body">
+          <p>Calls <code>GET /api/v1/functions/summary</code> and prints a table of every function in your active org.</p>
+          <pre><code><span class="t-cmd">rival fetch</span></code></pre>
+          <p style="margin-top:10px; color:var(--muted); font-size:13px;">Each row shows: name · slug · ID · type · visibility · runtime · latest version · state · description.</p>
+          <table class="flags-table" style="margin-top:10px;">
+            <thead><tr><th>Flag</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td class="flag-col">-u, --api-url &lt;url&gt;</td><td class="desc-col">Override the backend API URL</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- select -->
+      <div class="cmd-card" id="select">
+        <div class="cmd-header">
+          <span class="cmd-name">rival select</span>
+          <span class="cmd-desc">Pin a version in rival.json</span>
+        </div>
+        <div class="cmd-body">
+          <p>Fetches all versions for the current function and prompts you to choose one. Saves the selection to <code>rival.json</code> so subsequent <code>rival push</code> and <code>rival load</code> calls target that version automatically.</p>
+          <pre><code><span class="t-cmd">rival select</span>
+
+<span class="t-cmt">? Select a version  (Use arrow keys)</span>
+<span class="t-ok">❯ Draft</span>
+  v1
+  v2</code></pre>
+          <table class="flags-table">
+            <thead><tr><th>Flag</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td class="flag-col">--cwd &lt;dir&gt;</td><td class="desc-col">Working directory containing <code>rival.json</code></td></tr>
+              <tr><td class="flag-col">-u, --api-url &lt;url&gt;</td><td class="desc-col">Override the backend API URL</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── rival.json schema ── -->
+    <div class="section" id="rival-json">
+      <h2>rival.json schema</h2>
+      <p style="color:var(--muted); margin-bottom:12px; font-size:13px;">Created by <code>rival init</code>, updated by <code>rival select</code> and <code>rival load</code>. Must be in the working directory when running <code>rival push</code>, <code>rival load</code>, or <code>rival select</code>.</p>
+      <div class="json-schema">
+<span class="jc">// rival.json</span>
+{
+  <span class="jk">"functionId"</span>:  <span class="js">"fn_abc123"</span>,           <span class="jc">// backend function ID</span>
+  <span class="jk">"orgSlug"</span>:     <span class="js">"acme"</span>,               <span class="jc">// org slug from backend</span>
+  <span class="jk">"fnSlug"</span>:      <span class="js">"my-price-forecast"</span>,   <span class="jc">// function slug</span>
+  <span class="jk">"version"</span>:     <span class="js">"Draft"</span>,              <span class="jc">// active version label</span>
+  <span class="jk">"runtime"</span>:     <span class="js">"python:3.13"</span>,        <span class="jc">// runtime identifier</span>
+  <span class="jk">"files"</span>: [                            <span class="jc">// relative file paths</span>
+    <span class="js">"main.py"</span>,
+    <span class="js">"requirements.txt"</span>
+  ]
+}
+      </div>
+    </div>
+
+    <!-- ── Environment variables ── -->
+    <div class="section" id="env">
+      <h2>Environment variables</h2>
+      <p style="color:var(--muted); margin-bottom:12px; font-size:13px;">Loaded from <code>~/.rival/.env</code> first, then <code>.env</code> in the package directory. Values here override defaults but are overridden by CLI flags.</p>
+      <table class="flags-table">
+        <thead><tr><th>Variable</th><th>Description</th><th>Default</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="flag-col">RIVAL_TOKEN</td>
+            <td class="desc-col">Session JWT — skips reading from <code>config.json</code></td>
+            <td class="dflt-col">—</td>
+          </tr>
+          <tr>
+            <td class="flag-col">RIVAL_ORG_ID</td>
+            <td class="desc-col">Organization ID override</td>
+            <td class="dflt-col">—</td>
+          </tr>
+          <tr>
+            <td class="flag-col">RIVAL_API_URL</td>
+            <td class="desc-col">Backend API base URL</td>
+            <td class="dflt-col">cortexone-api-dev.rival.io</td>
+          </tr>
+          <tr>
+            <td class="flag-col">DESCOPE_PROJECT_ID</td>
+            <td class="desc-col">Descope project ID used for OTP auth</td>
+            <td class="dflt-col">P34BHLas1imEyKtqssBSuha6Hbxu</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── Runtimes ── -->
+    <div class="section" id="runtimes">
+      <h2>Runtimes &amp; allowed file types</h2>
+      <p style="color:var(--muted); margin-bottom:12px; font-size:13px;"><code>rival push</code> will reject files whose extension does not match the runtime declared in <code>rival.json</code>.</p>
+      <table class="flags-table">
+        <thead><tr><th>Runtime</th><th>Allowed extensions</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="flag-col">python:3.13</td>
+            <td class="desc-col"><code>.py</code> &nbsp; <code>.txt</code></td>
+          </tr>
+          <tr>
+            <td class="flag-col">javascript</td>
+            <td class="desc-col"><code>.js</code></td>
+          </tr>
+          <tr>
+            <td class="flag-col">lua</td>
+            <td class="desc-col"><code>.lua</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer>
+      <p>rival CLI &nbsp;·&nbsp; Built for <a href="https://rival.io" style="color:var(--accent-light); text-decoration:none;">rival.io</a></p>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  // Highlight active nav link based on scroll position
+  const sections = document.querySelectorAll('[id]');
+  const navLinks = document.querySelectorAll('nav a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const link = document.querySelector(`nav a[href="#${entry.target.id}"]`);
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -75% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
