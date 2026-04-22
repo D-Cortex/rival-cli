@@ -49,8 +49,17 @@ export function createPushCommand(): Command {
         const apiUrl = options.apiUrl ?? getApiUrl();
         const client = new RivalApiClient(apiUrl, token, orgId);
 
-        // Block push on non-private functions
-        if (projectConfig?.orgSlug && projectConfig?.fnSlug) {
+        // Validate file types against runtime
+        const runtime = projectConfig?.runtime;
+        if (runtime) {
+          validateFilesForRuntime(fileList, runtime);
+        }
+
+        // Version — from flag, rival.json, or default Draft
+        const version = options.version ?? projectConfig?.version ?? 'Draft';
+
+        // Block push on non-private functions (Draft version is always allowed)
+        if (version !== 'Draft' && projectConfig?.orgSlug && projectConfig?.fnSlug) {
           const visSpinner = ora('Checking function visibility…').start();
           try {
             const visibility = await client.getFunctionVisibility(
@@ -73,15 +82,6 @@ export function createPushCommand(): Command {
             // If we can't fetch visibility, proceed and let the backend enforce it
           }
         }
-
-        // Validate file types against runtime
-        const runtime = projectConfig?.runtime;
-        if (runtime) {
-          validateFilesForRuntime(fileList, runtime);
-        }
-
-        // Version — from flag, rival.json, or default Draft
-        const version = options.version ?? projectConfig?.version ?? 'Draft';
 
         // Read files from disk
         const readSpinner = ora(`Reading ${fileList.length} file(s)…`).start();

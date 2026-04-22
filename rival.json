@@ -1,0 +1,10 @@
+{
+  "functionId": "19224838-fb33-4d0b-bb31-87d32635fa17",
+  "orgSlug": "rival",
+  "fnSlug": "rival-mcp-server",
+  "version": "Draft",
+  "runtime": "javascript",
+  "files": [
+    "cortexone_function.js"
+  ]
+}

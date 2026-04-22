@@ -66,3 +66,9 @@ export function requireOrgId(): string {
 export function getApiUrl(): string {
   return process.env.RIVAL_API_URL || readConfig().apiUrl || 'https://cortexone-api-dev.rival.io';
 }
+
+export function switchOrg(orgId: string): void {
+  const config = readConfig();
+  config.orgId = orgId;
+  writeConfig(config);
+}

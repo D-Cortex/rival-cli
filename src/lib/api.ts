@@ -219,10 +219,47 @@ export class RivalApiClient {
     return res.data;
   }
 
+  async updateFunctionDetails(orgSlug: string, fnSlug: string, payload: {
+    function_id: string;
+    function_name?: string;
+    short_description?: string;
+    category_ids?: string[];
+    tag_ids?: string[];
+    sector_ids?: string[];
+    long_description?: string;
+  }): Promise<unknown> {
+    const res = await this.client.put(
+      `/api/v1/function/${encodeURIComponent(orgSlug)}/${encodeURIComponent(fnSlug)}/details`,
+      { fnSlug, orgSlug, ...payload }
+    );
+    return res.data;
+  }
+
   async getFunctionVisibility(orgSlug: string, fnSlug: string): Promise<string> {
     const res = await this.client.get<any>(
       `/api/v1/function/${encodeURIComponent(orgSlug)}/${encodeURIComponent(fnSlug)}/details`
     );
     return res.data?.data?.visibility ?? res.data?.data?.function?.visibility ?? 'private';
+  }
+
+  async createEvent(payload: {
+    function_id: string;
+    event_name: string;
+    version: string;
+    event_id?: string;
+    event_data?: Record<string, unknown>;
+  }): Promise<unknown> {
+    const res = await this.client.post('/api/v1/events', payload);
+    return res.data;
+  }
+
+  async createEventsBulk(events: Array<{
+    function_id: string;
+    event_name: string;
+    version: string;
+    event_data?: Record<string, unknown>;
+  }>): Promise<unknown> {
+    const res = await this.client.post('/api/v1/events/bulk', { events });
+    return res.data;
   }
 }

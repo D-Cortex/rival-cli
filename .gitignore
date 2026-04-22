@@ -2,3 +2,10 @@ node_modules/
 dist/
 .env
 *.js.map
+
+# Local connector worktrees
+*-connector/
+
+# Connector test manifests
+*-test-events.json
+connector-test-events.json
