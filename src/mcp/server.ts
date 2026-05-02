@@ -338,6 +338,84 @@ const TOOLS = [
       required: ['events'],
     },
   },
+  {
+    name: 'rival_get_test_events',
+    description:
+      'List all test events / test cases for a function. Returns event IDs, names, and payloads. Falls back to rival.json for org_slug and fn_slug.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        org_slug: {
+          type: 'string',
+          description: 'Organization slug. Falls back to rival.json "orgSlug".',
+        },
+        fn_slug: {
+          type: 'string',
+          description: 'Function slug. Falls back to rival.json "fnSlug".',
+        },
+        cwd: {
+          type: 'string',
+          description: 'Working directory for rival.json lookup (default: process.cwd())',
+        },
+        api_url: { type: 'string', description: 'Override API base URL (optional)' },
+      },
+    },
+  },
+  {
+    name: 'rival_update_test_event',
+    description:
+      'Update an existing test event / test case by event ID. Can update the event name, version, and/or payload.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        event_id: {
+          type: 'string',
+          description: 'ID of the event to update.',
+        },
+        event_name: {
+          type: 'string',
+          description: 'New event name.',
+        },
+        version: {
+          type: 'string',
+          description: 'New version string (e.g. "", "Draft", "v1").',
+        },
+        event_data: {
+          type: 'object',
+          description: 'New event payload object.',
+          additionalProperties: true,
+        },
+        api_url: { type: 'string', description: 'Override API base URL (optional)' },
+      },
+      required: ['event_id'],
+    },
+  },
+  {
+    name: 'rival_update_test_events_bulk',
+    description:
+      'Update multiple test events in a single call. Useful for patching version, name, or data across many events at once.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        events: {
+          type: 'array',
+          description: 'Array of events to update.',
+          items: {
+            type: 'object',
+            properties: {
+              event_id: { type: 'string', description: 'ID of the event to update.' },
+              event_name: { type: 'string', description: 'New event name.' },
+              version: { type: 'string', description: 'New version string.' },
+              event_data: { type: 'object', additionalProperties: true, description: 'New payload.' },
+            },
+            required: ['event_id'],
+          },
+        },
+        api_url: { type: 'string', description: 'Override API base URL (optional)' },
+      },
+      required: ['events'],
+    },
+  },
 ];
 
 // ─── tool handlers ───────────────────────────────────────────────────────────
@@ -693,6 +771,77 @@ async function handleCreateTestEventsBulk(args: AnyArgs) {
   }
 }
 
+async function handleGetTestEvents(args: AnyArgs) {
+  try {
+    const workDir = (args.cwd as string | undefined) ?? process.cwd();
+    const projectConfig = loadProjectConfig(workDir);
+
+    const orgSlug = (args.org_slug as string | undefined) ?? projectConfig?.orgSlug;
+    const fnSlug = (args.fn_slug as string | undefined) ?? projectConfig?.fnSlug;
+
+    if (!orgSlug || !fnSlug) {
+      return fail('org_slug and fn_slug are required. Pass them directly or add "orgSlug"/"fnSlug" to rival.json.');
+    }
+
+    const client = getClient(args.api_url as string | undefined);
+    const result = await client.getEvents(orgSlug, fnSlug);
+    return ok(result);
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : String(e));
+  }
+}
+
+async function handleUpdateTestEvent(args: AnyArgs) {
+  try {
+    const eventId = args.event_id as string | undefined;
+    if (!eventId) return fail('event_id is required.');
+
+    const payload: { event_name?: string; event_data?: Record<string, unknown>; version?: string } = {};
+    if (args.event_name) payload.event_name = args.event_name as string;
+    if (args.event_data) payload.event_data = args.event_data as Record<string, unknown>;
+    if (args.version !== undefined) payload.version = args.version as string;
+
+    const client = getClient(args.api_url as string | undefined);
+    const result = await client.updateEvent(eventId, payload);
+    return ok(result);
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : String(e));
+  }
+}
+
+async function handleUpdateTestEventsBulk(args: AnyArgs) {
+  try {
+    const events = args.events as Array<{
+      event_id: string;
+      event_name?: string;
+      version?: string;
+      event_data?: Record<string, unknown>;
+    }>;
+
+    if (!Array.isArray(events) || !events.length) {
+      return fail('events must be a non-empty array.');
+    }
+
+    const client = getClient(args.api_url as string | undefined);
+    const results = await Promise.all(
+      events.map((e) => {
+        const payload: { event_name?: string; version?: string; event_data?: Record<string, unknown> } = {};
+        if (e.event_name) payload.event_name = e.event_name;
+        if (e.version !== undefined) payload.version = e.version;
+        if (e.event_data) payload.event_data = e.event_data;
+        return client.updateEvent(e.event_id, payload)
+          .then((res) => ({ event_id: e.event_id, success: true, response: res }))
+          .catch((err: Error) => ({ event_id: e.event_id, success: false, error: err.message }));
+      })
+    );
+
+    const failed = results.filter((r) => !r.success);
+    return ok({ updated: results.length - failed.length, failed: failed.length, results });
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : String(e));
+  }
+}
+
 // ─── server bootstrap ────────────────────────────────────────────────────────
 
 export async function startMcpServer() {
@@ -720,6 +869,9 @@ export async function startMcpServer() {
       case 'rival_update_function':           return handleUpdateFunction(args as AnyArgs);
       case 'rival_create_test_event':        return handleCreateTestEvent(args as AnyArgs);
       case 'rival_create_test_events_bulk':  return handleCreateTestEventsBulk(args as AnyArgs);
+      case 'rival_get_test_events':           return handleGetTestEvents(args as AnyArgs);
+      case 'rival_update_test_event':         return handleUpdateTestEvent(args as AnyArgs);
+      case 'rival_update_test_events_bulk':   return handleUpdateTestEventsBulk(args as AnyArgs);
       default:
         return fail(`Unknown tool: ${name}`);
     }

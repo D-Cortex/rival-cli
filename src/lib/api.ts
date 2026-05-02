@@ -57,8 +57,10 @@ export class DescopeClient {
     return res.data;
   }
 
-  async refreshSession(refreshJwt: string): Promise<{ sessionJwt: string; refreshJwt: string }> {
-    const res = await this.client.post<any>('/v1/auth/refresh', { refreshJwt });
+  async refreshSession(refreshJwt: string): Promise<{ sessionJwt: string; refreshJwt?: string }> {
+    const res = await this.client.post<any>('/v1/auth/refresh', {}, {
+      headers: { Cookie: `DSR=${refreshJwt}` },
+    });
     return res.data;
   }
 }
@@ -91,7 +93,7 @@ export interface Metadata {
   tags: { tag_id: string; name: string }[];
 }
 
-const DESCOPE_PROJECT_ID = process.env.DESCOPE_PROJECT_ID ?? 'P34BHLas1imEyKtqssBSuha6Hbxu';
+const DESCOPE_PROJECT_ID = process.env.DESCOPE_PROJECT_ID;
 
 /** Rival backend API client */
 export class RivalApiClient {
@@ -122,6 +124,7 @@ export class RivalApiClient {
 
         try {
           originalRequest._retried = true;
+          if (!DESCOPE_PROJECT_ID) return Promise.reject(error);
           const descope = new DescopeClient(DESCOPE_PROJECT_ID);
           const refreshed = await descope.refreshSession(refreshJwt);
           const newToken = refreshed.sessionJwt;
@@ -260,6 +263,22 @@ export class RivalApiClient {
     event_data?: Record<string, unknown>;
   }>): Promise<unknown> {
     const res = await this.client.post('/api/v1/events/bulk', { events });
+    return res.data;
+  }
+
+  async getEvents(orgSlug: string, fnSlug: string): Promise<unknown> {
+    const res = await this.client.get(
+      `/api/v1/functions/${encodeURIComponent(orgSlug)}/${encodeURIComponent(fnSlug)}/events`
+    );
+    return res.data;
+  }
+
+  async updateEvent(eventId: string, payload: {
+    event_name?: string;
+    event_data?: Record<string, unknown>;
+    version?: string;
+  }): Promise<unknown> {
+    const res = await this.client.put(`/api/v1/events/${eventId}`, payload);
     return res.data;
   }
 }

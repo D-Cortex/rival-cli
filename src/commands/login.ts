@@ -13,7 +13,11 @@ export function createLoginCommand(): Command {
     .option('-e, --email <email>', 'Your Rival account email')
     .option('-u, --api-url <url>', 'Override API base URL')
     .action(async (options: { email?: string; apiUrl?: string }) => {
-      const projectId = process.env.DESCOPE_PROJECT_ID ?? 'P34BHLas1imEyKtqssBSuha6Hbxu';
+      const projectId = process.env.DESCOPE_PROJECT_ID;
+      if (!projectId) {
+        console.error(chalk.red('Error: ') + 'DESCOPE_PROJECT_ID environment variable is not set.');
+        process.exit(1);
+      }
 
       const descope = new DescopeClient(projectId);
       const apiUrl = options.apiUrl ?? getApiUrl();

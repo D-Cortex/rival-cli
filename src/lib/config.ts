@@ -64,7 +64,7 @@ export function requireOrgId(): string {
 }
 
 export function getApiUrl(): string {
-  return process.env.RIVAL_API_URL || readConfig().apiUrl || 'https://cortexone-api-dev.rival.io';
+  return process.env.RIVAL_API_URL || readConfig().apiUrl || 'https://cortexone.rival.io';
 }
 
 export function switchOrg(orgId: string): void {
